@@ -28,6 +28,7 @@ testing <- data.frame(testing$problem_id, testing[,predictors])
 names(testing)[1] <- "problem_id"
 
 # Subset the data into a training (75%) and a validation (25%) set
+set.seed(1000)
 inTrain <- createDataPartition(goodData$classe, p=.75, list=F)
 training <- goodData[inTrain,]
 validation <- goodData[-inTrain,]

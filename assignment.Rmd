@@ -5,7 +5,7 @@ output:
 ---
 # Practical Machine Learning - Course Project
 ### Introduction
-Data from the accelerometers of wearable devices (such as Jawbone UP, NIke Fuelband, etc.) has been collected for several participants completing a particular exercise with dumbbells. Participants complete the exercise correctly and incorrectly, in five different ways. The aim of the prediction model below is to correctly predict in which way the exercise was performed using the accelerometer data.
+Data from the accelerometers of wearable devices (such as Jawbone UP, Nike Fuelband, etc.) has been collected for several participants while completing a particular exercise with dumbbells. Participants complete the exercise correctly and incorrectly, in five different ways. The aim of our prediction model is to correctly predict in which way the exercise was performed using the accelerometer data.
 
 ``` {r echo=FALSE, message=FALSE, warning=FALSE}
 setwd("/Users/Derek/Desktop/Coursera/8 - Practical Machine Learning/Assignment/")
@@ -13,7 +13,7 @@ setwd("/Users/Derek/Desktop/Coursera/8 - Practical Machine Learning/Assignment/"
 
 ### Data preparation
 
-A random forest model is used, so the caret and randomForest packages must first be loaded. The data has been pre-downloaded due to its large size and string NAs, blanks and #DIV/0s converted to NAs.
+A random forest model is used, so the caret and randomForest packages must first be loaded. The data has been pre-downloaded due to its large size and string NAs, blanks and #DIV/0s are converted to NAs.
 
 ``` {r echo=TRUE, message=FALSE, warning=FALSE}
 # Load the required machine learning packages and training and testing datasets
@@ -54,6 +54,7 @@ We'll split the original training data into two sets - 75% will be retained to t
 
 ``` {r echo=TRUE, message=FALSE, warning=FALSE}
 # Subset the data into a training (75%) and a validation (25%) set
+set.seed(1000)
 inTrain <- createDataPartition(goodData$classe, p=.75, list=F)
 training <- goodData[inTrain,]
 validation <- goodData[-inTrain,]
@@ -72,7 +73,7 @@ plot(training$roll_belt, training$yaw_belt, col=training$classe, xlab="roll_belt
 
 ### Evaluating the model
 
-Now we want to see how accurate our model is. We can apply the model to the validation set to test its accuracy. Using a confusion matrix of the actual to predicted outcomes, we can see that thsi model has a very high accuracy (99.5%). We can now be comfortable applying this model to the test set.
+Now we want to see how accurate our model is. We can apply the model to the validation set to test its accuracy. Using a confusion matrix of the actual to predicted outcomes, we can see that this model has a very high out of sample accuracy (99.5%). We can now be comfortable applying this model to the test set.
 
 ``` {r echo=TRUE, message=FALSE, warning=FALSE}
 # Estimate the out-of-bag accuracy using the validation data
