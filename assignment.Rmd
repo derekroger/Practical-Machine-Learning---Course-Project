@@ -1,0 +1,99 @@
+---
+output:
+  html_document:
+    theme: cerulean
+---
+# Practical Machine Learning - Course Project
+### Introduction
+Data from the accelerometers of wearable devices (such as Jawbone UP, NIke Fuelband, etc.) has been collected for several participants completing a particular exercise with dumbbells. Participants complete the exercise correctly and incorrectly, in five different ways. The aim of the prediction model below is to correctly predict in which way the exercise was performed using the accelerometer data.
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+setwd("/Users/Derek/Desktop/Coursera/8 - Practical Machine Learning/Assignment/")
+```
+
+### Data preparation
+
+A random forest model is used, so the caret and randomForest packages must first be loaded. The data has been pre-downloaded due to its large size and string NAs, blanks and #DIV/0s converted to NAs.
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Load the required machine learning packages and training and testing datasets
+library(caret)
+library(randomForest)
+
+training <- read.csv("pml-training.csv", na.strings=c("","#DIV/0!","NA"))
+testing <- read.csv("pml-testing.csv", na.strings=c("","#DIV/0!","NA"))
+```
+
+In this dataset, there are many columns that represent an aggregate figure of a particular 'window' (i.e. min, avg). These same variables are also missing lots of data - we must exclude these for our model to have the best chance of having an accurate prediction. I have excluded all columns that have over 90% missing data.
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Retain columns that are less than 90% missing (NA)
+goodData <- training[colSums(is.na(training)) / nrow(training) < .9]
+rm(training)
+```
+
+It's important that we identify the features that are most useful for prediction - these are all those that include 'arm', 'belt' or 'dumbbell' in the feature name - that is, they are the actual accelerometer readings. Columns 'X' and various datestamps are excluded as they have more to do with data gathering than the exercise itself.
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Convert appropriate features to numeric values
+predictors <- names(goodData)[grep("arm|belt|dumbbell", names(goodData))]
+goodData[,predictors] <- sapply(goodData[,predictors],as.numeric)
+testing[,predictors] <- sapply(testing[,predictors],as.numeric)
+```
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Only retain the outcome (classe) and predictors and remove columns pertaining to data gathering (time, X)
+goodData <- data.frame(goodData$classe, goodData[,predictors])
+names(goodData)[1] <- "classe"
+testing <- data.frame(testing$problem_id, testing[,predictors])
+names(testing)[1] <- "problem_id"
+```
+
+### Building the model
+
+We'll split the original training data into two sets - 75% will be retained to train the model and 25% put aside for cross validation. This allows us to estimate the out-of-bag accuracy before applying to the "unseen" test data, for which we don't have an outcome (classe) to compare against.
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Subset the data into a training (75%) and a validation (25%) set
+inTrain <- createDataPartition(goodData$classe, p=.75, list=F)
+training <- goodData[inTrain,]
+validation <- goodData[-inTrain,]
+
+# Fit a random forest model using the training data
+fit <- randomForest(classe ~ ., data=training)
+```
+
+With a random forest, we're able to see which variables are the most influential in the prediction of classe. Using varImp, we can see the two most important features are 'roll_belt' and 'yaw_belt'. I've plotted these against classe to see that the data is in fact clustering around distinct points, especially the classe represented by cyan.
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Look at the most important features
+imp <- varImp(fit)[order(-varImp(fit)$Overall),,drop=F]
+plot(training$roll_belt, training$yaw_belt, col=training$classe, xlab="roll_belt", ylab="yaw_belt", main="Most important features")
+```
+
+### Evaluating the model
+
+Now we want to see how accurate our model is. We can apply the model to the validation set to test its accuracy. Using a confusion matrix of the actual to predicted outcomes, we can see that thsi model has a very high accuracy (99.5%). We can now be comfortable applying this model to the test set.
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# Estimate the out-of-bag accuracy using the validation data
+test <- predict(fit, newdata=validation)
+confusionMatrix(test, validation$classe)
+```
+
+``` {r echo=TRUE, message=FALSE, warning=FALSE}
+# predict the classe of the test data
+answers <- predict(fit, newdata=testing)
+```
+
+``` {r echo=FALSE, message=FALSE, warning=FALSE}
+# Write answers out to individual files for submission to Coursera
+# pml_write_files = function(x){
+#     n = length(x)
+#     for(i in 1:n){
+#         filename = paste0("problem_id_",i,".txt")
+#         write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+#     }
+# }
+# 
+# pml_write_files(answers)
+```
